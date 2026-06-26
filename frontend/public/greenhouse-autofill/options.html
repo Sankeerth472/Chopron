@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chopron Greenhouse Autofill</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      body {
+        margin: 0;
+        background: linear-gradient(135deg, #0f172a 0%, #111827 45%, #042f2e 100%);
+        color: #e2e8f0;
+      }
+      .shell {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 32px 20px;
+      }
+      .card {
+        width: min(760px, 100%);
+        border-radius: 28px;
+        border: 1px solid rgba(148, 163, 184, 0.24);
+        background: rgba(15, 23, 42, 0.82);
+        box-shadow: 0 24px 80px -40px rgba(8, 47, 73, 0.9);
+        padding: 28px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 30px;
+      }
+      p {
+        color: #cbd5e1;
+        line-height: 1.7;
+      }
+      label {
+        display: block;
+        margin: 18px 0 8px;
+        font-size: 14px;
+        font-weight: 700;
+      }
+      input, textarea {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid rgba(148, 163, 184, 0.28);
+        border-radius: 18px;
+        background: rgba(15, 23, 42, 0.7);
+        color: #f8fafc;
+        padding: 14px 16px;
+        font: inherit;
+      }
+      textarea {
+        min-height: 150px;
+        resize: vertical;
+      }
+      .actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 20px;
+      }
+      button {
+        border: 0;
+        border-radius: 16px;
+        padding: 12px 18px;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .primary {
+        background: #14b8a6;
+        color: #042f2e;
+      }
+      .secondary {
+        background: rgba(255, 255, 255, 0.08);
+        color: #e2e8f0;
+      }
+      .status {
+        margin-top: 16px;
+        min-height: 24px;
+        font-size: 14px;
+      }
+      .hint {
+        margin-top: 18px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.06);
+        padding: 16px;
+      }
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <div class="card">
+        <h1>Chopron Greenhouse Autofill</h1>
+        <p>Copy the setup JSON from the Chopron dashboard, paste it below, then save. After that, open any Greenhouse application page and click the floating <code>Auto-apply</code> button.</p>
+
+        <label for="setup-json">Setup JSON from Chopron</label>
+        <textarea id="setup-json" placeholder='{"apiBaseUrl":"http://localhost:8000","authToken":"..."}'></textarea>
+
+        <label for="api-base-url">API base URL</label>
+        <input id="api-base-url" placeholder="http://localhost:8000" />
+
+        <label for="auth-token">Auth token</label>
+        <textarea id="auth-token" placeholder="Paste the Chopron auth token"></textarea>
+
+        <div class="actions">
+          <button class="primary" id="save-button">Save setup</button>
+          <button class="secondary" id="test-button">Test connection</button>
+        </div>
+
+        <div class="status" id="status"></div>
+
+        <div class="hint">
+          <p>If the connection test fails, make sure the FastAPI app is running on <code>http://localhost:8000</code> and that you copied a fresh setup JSON from the logged-in dashboard.</p>
+        </div>
+      </div>
+    </div>
+    <script src="options.js"></script>
+  </body>
+  </html>

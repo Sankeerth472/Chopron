@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Chopron Greenhouse Autofill",
+  "version": "0.1.0",
+  "description": "Adds an Auto-apply button to Greenhouse job applications using your saved Chopron profile.",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://*.greenhouse.io/*",
+    "https://greenhouse.io/*",
+    "http://localhost:8000/*",
+    "http://127.0.0.1:8000/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_page": "options.html",
+  "action": {
+    "default_title": "Chopron Greenhouse Autofill"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
