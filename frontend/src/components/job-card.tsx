@@ -1,6 +1,5 @@
-import { ArrowUpRight, Building2, CalendarDays, CheckSquare, MapPin, Radar, WandSparkles } from 'lucide-react'
+import { ArrowUpRight, Building2, CalendarDays, CheckSquare, MapPin, Radar } from 'lucide-react'
 import { formatDate, formatScore, toTitleCase } from '../lib/format'
-import { canAutoApplyJob, openJobForAutofill } from '../lib/job-actions'
 import type { JobSummary } from '../types/api'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
@@ -26,8 +25,6 @@ function recommendationVariant(recommendation: string) {
 }
 
 export function JobCard({ job, onOpen, onToggleApplied, isUpdating = false }: JobCardProps) {
-  const canAutoApply = canAutoApplyJob(job.source, job.url)
-
   return (
     <Card className="group p-5 transition duration-300 hover:-translate-y-1 hover:shadow-[0_30px_80px_-40px_rgba(15,23,42,0.55)]">
       <div className="flex items-start justify-between gap-4">
@@ -92,12 +89,6 @@ export function JobCard({ job, onOpen, onToggleApplied, isUpdating = false }: Jo
           <CheckSquare className="h-4 w-4 text-teal-600" />
           Mark as applied
         </label>
-        {canAutoApply ? (
-          <Button className="w-full justify-between" onClick={() => openJobForAutofill(job.url!)}>
-            Auto Apply
-            <WandSparkles className="h-4 w-4" />
-          </Button>
-        ) : null}
         <Button variant="secondary" className="w-full justify-between" onClick={() => onOpen(job.id)}>
           Open analysis
           <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />

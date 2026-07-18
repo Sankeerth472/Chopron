@@ -9,12 +9,10 @@ import {
   MessageSquareQuote,
   Sparkles,
   Target,
-  WandSparkles,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { getJobDetail } from '../lib/api'
 import { asStringArray, formatDate, formatScore, toTitleCase } from '../lib/format'
-import { canAutoApplyJob, openJobForAutofill } from '../lib/job-actions'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 
@@ -41,7 +39,6 @@ export function JobDetailDrawer({ jobId, onClose }: JobDetailDrawerProps) {
     queryFn: () => getJobDetail(jobId!),
     enabled: jobId !== null,
   })
-  const canAutoApply = data ? canAutoApplyJob(data.source, data.url) : false
 
   return (
     <Dialog.Root open={jobId !== null} onOpenChange={(open) => !open && onClose()}>
@@ -122,12 +119,6 @@ export function JobDetailDrawer({ jobId, onClose }: JobDetailDrawerProps) {
               </Section>
 
               <div className="flex flex-wrap gap-3">
-                {canAutoApply ? (
-                  <Button onClick={() => openJobForAutofill(data.url!)}>
-                    Auto Apply
-                    <WandSparkles className="h-4 w-4" />
-                  </Button>
-                ) : null}
                 <Button asChild>
                   <a href={data.url || '#'} target="_blank" rel="noreferrer">
                     Open job posting

@@ -1,5 +1,5 @@
 import { BriefcaseBusiness, GraduationCap, ScanSearch, Sparkles } from 'lucide-react'
-import { asStringArray, summarizeProfile, toTitleCase } from '../lib/format'
+import { asStringArray, getDisplayEducation, summarizeProfile, toTitleCase } from '../lib/format'
 import type { ProfileResponse } from '../types/api'
 import { Badge } from './ui/badge'
 import { Card } from './ui/card'
@@ -12,7 +12,7 @@ export function ProfileSummary({ profile }: ProfileSummaryProps) {
   const summary = summarizeProfile(profile.candidate_profile)
   const weakerSkills = asStringArray(profile.candidate_profile.missing_or_weaker_skills).slice(0, 5)
   const domains = asStringArray(profile.candidate_profile.domains).slice(0, 4)
-  const education = asStringArray(profile.candidate_profile.education).slice(0, 2)
+  const education = getDisplayEducation(profile.candidate_profile)
 
   return (
     <Card className="overflow-hidden p-6 sm:p-8">
@@ -51,9 +51,15 @@ export function ProfileSummary({ profile }: ProfileSummaryProps) {
               <GraduationCap className="h-4 w-4 text-sky-600" />
               Education
             </div>
-            <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-              {education.length > 0 ? education.join(' | ') : 'Education summary unavailable.'}
-            </p>
+            {education.length > 0 ? (
+              <div className="mt-3 space-y-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                {education.map((item) => (
+                  <p key={item}>{item}</p>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">Education summary unavailable.</p>
+            )}
           </div>
           <div className="rounded-[24px] bg-slate-50 p-5 dark:bg-slate-900/80">
             <div className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">

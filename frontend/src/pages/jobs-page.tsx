@@ -1,12 +1,14 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { BriefcaseBusiness, ChevronLeft, ChevronRight, Filter, SearchX } from 'lucide-react'
-import { getMyJobs, updateJobStatus } from '../lib/api'
+import { fetchJobs, getMyJobs, getMyProfile, updateJobStatus } from '../lib/api'
+import { getOrCreateActiveFlowId } from '../lib/request-context'
 import { JobCard } from '../components/job-card'
 import { JobDetailDrawer } from '../components/job-detail-drawer'
 import { JobFilters, type JobFiltersState } from '../components/job-filters'
 import { JobsSkeleton } from '../components/loading-skeletons'
 import { Badge } from '../components/ui/badge'
+import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 import { toast } from 'sonner'
 
@@ -33,6 +35,12 @@ export function JobsPage() {
   const jobElementRefs = useRef(new Map<number, HTMLDivElement>())
   const previousPositionsRef = useRef(new Map<number, DOMRect>())
   const leaveTimersRef = useRef(new Map<number, number>())
+  const profileQuery = useQuery({
+    queryKey: ['latest-profile'],
+    queryFn: getMyProfile,
+    retry: false,
+    staleTime: 5 * 60_000,
+  })
 
   const jobsQuery = useQuery({
     queryKey: ['jobs', page, PAGE_SIZE],
@@ -56,6 +64,17 @@ export function JobsPage() {
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : 'Failed to update job status.')
+    },
+  })
+  const fetchJobsMutation = useMutation({
+    mutationFn: (profileId?: number) => fetchJobs({ profileId, limit: 25, flowId: getOrCreateActiveFlowId() }),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['jobs'] })
+      queryClient.invalidateQueries({ queryKey: ['jobs-summary'] })
+      toast.success(`Matching jobs refreshed. ${result.jobs.length} jobs returned.`)
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : 'Failed to fetch jobs.')
     },
   })
   const sources = useMemo(() => Array.from(new Set(jobs.map((job) => job.source).filter(Boolean))).sort(), [jobs])
@@ -181,10 +200,25 @@ export function JobsPage() {
               Search by title or company, filter by recommendation or source, and open any role for a deeper fit breakdown.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="accent">{totalJobs} total</Badge>
-            <Badge variant="success">{jobs.filter((job) => job.apply_recommendation === 'APPLY').length} apply</Badge>
+          <div className="flex flex-col items-start gap-3 lg:items-end">
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="accent">{totalJobs} total</Badge>
+              <Badge variant="success">{jobs.filter((job) => job.apply_recommendation === 'APPLY').length} apply</Badge>
+            </div>
+            <Button
+              size="lg"
+              onClick={() => fetchJobsMutation.mutate(profileQuery.data?.profile_id)}
+              disabled={fetchJobsMutation.isPending || profileQuery.isLoading || !profileQuery.data}
+            >
+              {fetchJobsMutation.isPending ? 'Fetching jobs...' : 'Find Matching Jobs'}
+            </Button>
           </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <Stat label="Fetched" value={String(fetchJobsMutation.data?.fetched_count ?? jobs.length)} />
+          <Stat label="Deduplicated" value={String(fetchJobsMutation.data?.deduplicated_count ?? jobs.length)} />
+          <Stat label="Passed" value={String(fetchJobsMutation.data?.passed_count ?? jobs.filter((job) => job.apply_recommendation !== 'REVIEW').length)} />
+          <Stat label="Updated" value={String(fetchJobsMutation.data?.updated_count ?? 0)} />
         </div>
         <JobFilters filters={filters} sources={sources} onChange={handleFiltersChange} />
       </section>
@@ -205,7 +239,7 @@ export function JobsPage() {
           </p>
           <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
             {jobs.length === 0
-              ? 'Run the fetch pipeline from the dashboard after uploading a resume.'
+              ? 'Use Find Matching Jobs here after uploading a resume.'
               : 'Adjust search, source, priority, or minimum fit score filters.'}
           </p>
         </Card>
@@ -261,6 +295,15 @@ export function JobsPage() {
       )}
 
       <JobDetailDrawer jobId={selectedJobId} onClose={() => setSelectedJobId(null)} />
+    </div>
+  )
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[24px] bg-slate-50 p-4 dark:bg-slate-900">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{label}</p>
+      <p className="mt-2 text-2xl font-bold text-slate-950 dark:text-white">{value}</p>
     </div>
   )
 }

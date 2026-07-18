@@ -1,16 +1,13 @@
 import { useMemo } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, BriefcaseBusiness, Radar, Sparkles, TrendingUp } from 'lucide-react'
-import { toast } from 'sonner'
-import { ApiError, fetchJobs, getBackendHealth, getMyJobs, getMyProfile } from '../lib/api'
+import { ApiError, getBackendHealth, getMyJobs, getMyProfile } from '../lib/api'
 import { formatScore } from '../lib/format'
-import { getOrCreateActiveFlowId } from '../lib/request-context'
 import type { ProfileResponse } from '../types/api'
 import { BackendStatusCard } from '../components/backend-status-card'
 import { MetricCard } from '../components/metric-card'
 import { ProfileSummary } from '../components/profile-summary'
 import { UploadResumeCard } from '../components/upload-resume-card'
-import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 import { DashboardSkeleton } from '../components/loading-skeletons'
 
@@ -37,18 +34,6 @@ export function DashboardPage() {
     queryKey: ['jobs-summary'],
     queryFn: () => getMyJobs(100),
     staleTime: 60_000,
-  })
-
-  const fetchJobsMutation = useMutation({
-    mutationFn: (profileId?: number) => fetchJobs({ profileId, limit: 25, flowId: getOrCreateActiveFlowId() }),
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['jobs'] })
-      queryClient.invalidateQueries({ queryKey: ['jobs-summary'] })
-      toast.success(`Matching jobs refreshed. ${result.jobs.length} jobs returned.`)
-    },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : 'Failed to fetch jobs.')
-    },
   })
 
   function handleUpload(profile: ProfileResponse) {
@@ -163,27 +148,6 @@ export function DashboardPage() {
             <MetricCard label="Average Fit" value={formatScore(metrics.avgFit)} detail="Average AI fit score for jobs that were evaluated." icon={Radar} />
           </section>
 
-          <Card className="p-6 sm:p-8">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <p className="font-display text-2xl font-bold text-slate-950 dark:text-white">Find Matching Jobs</p>
-                <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-                  Trigger the backend job ingestion and screening pipeline, then refresh the saved jobs list in the UI.
-                </p>
-              </div>
-              <Button size="lg" onClick={() => fetchJobsMutation.mutate(profile.profile_id)} disabled={fetchJobsMutation.isPending}>
-                {fetchJobsMutation.isPending ? 'Fetching jobs...' : 'Find Matching Jobs'}
-              </Button>
-            </div>
-
-            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <Stat label="Fetched" value={String(fetchJobsMutation.data?.fetched_count ?? jobs.length)} />
-              <Stat label="Deduplicated" value={String(fetchJobsMutation.data?.deduplicated_count ?? jobs.length)} />
-              <Stat label="Passed" value={String(fetchJobsMutation.data?.passed_count ?? jobs.filter((job) => job.apply_recommendation !== 'REVIEW').length)} />
-              <Stat label="Updated" value={String(fetchJobsMutation.data?.updated_count ?? 0)} />
-            </div>
-          </Card>
-
           <UploadResumeCard onUploaded={handleUpload} disabled={backendOffline} helperText={backendOffline ? 'Backend unavailable. Resume upload is temporarily disabled.' : undefined} />
         </>
       ) : (
@@ -202,15 +166,6 @@ export function DashboardPage() {
           />
         </div>
       )}
-    </div>
-  )
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[24px] bg-slate-50 p-4 dark:bg-slate-900">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{label}</p>
-      <p className="mt-2 text-2xl font-bold text-slate-950 dark:text-white">{value}</p>
     </div>
   )
 }

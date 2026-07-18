@@ -1,9 +1,7 @@
-import { useState } from 'react'
-import { BarChart3, Bot, BriefcaseBusiness, LogOut, Sparkles } from 'lucide-react'
+import { BarChart3, BriefcaseBusiness, LogOut, Sparkles } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { getStoredSession, signOut } from '../lib/auth'
 import { cn } from '../lib/utils'
-import { AutofillPreferencesDialog } from './autofill-preferences-dialog'
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -13,7 +11,6 @@ const navItems = [
 
 export function AppShell() {
   const session = getStoredSession()
-  const [isAutofillOpen, setIsAutofillOpen] = useState(false)
 
   return (
     <div className="h-screen overflow-hidden px-4 py-4 text-slate-900 sm:px-6 lg:px-8 dark:text-slate-50">
@@ -46,14 +43,6 @@ export function AppShell() {
                 {label}
               </NavLink>
             ))}
-            <button
-              type="button"
-              className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium text-slate-400 transition hover:bg-white/6 hover:text-white"
-              onClick={() => setIsAutofillOpen(true)}
-            >
-              <Bot className="h-4 w-4" />
-              Autofill Info
-            </button>
           </div>
 
           <div className="mt-auto rounded-[28px] border border-white/10 bg-white/6 p-5">
@@ -103,20 +92,12 @@ export function AppShell() {
                     {label}
                   </NavLink>
                 ))}
-                <button
-                  type="button"
-                  className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-200"
-                  onClick={() => setIsAutofillOpen(true)}
-                >
-                  Autofill
-                </button>
               </div>
             </div>
             <Outlet />
           </div>
         </main>
       </div>
-      <AutofillPreferencesDialog open={isAutofillOpen} onOpenChange={setIsAutofillOpen} />
     </div>
   )
 }

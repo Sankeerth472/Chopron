@@ -41,12 +41,6 @@ REJECTED_LOCATION_TERMS = {
 }
 
 REJECTED_SENIORITY_TERMS = [
-    "staff",
-    "principal",
-    "lead",
-    "manager",
-    "director",
-    "head",
     "vp",
     "vice president",
 ]
@@ -117,7 +111,7 @@ def _normalize_text(value: Optional[str]) -> str:
 def _location_passes(location: Optional[str]) -> tuple[bool, str]:
     normalized = _normalize_text(location)
     if not normalized:
-        return False, "Missing location"
+        return True, "Missing location"
 
     if any(term in normalized for term in REJECTED_LOCATION_TERMS):
         return False, "Non-US location"
@@ -132,7 +126,7 @@ def _location_passes(location: Optional[str]) -> tuple[bool, str]:
     if any(token in US_STATE_CODES for token in location_tokens):
         return True, "US state location"
 
-    return False, "Location not clearly US"
+    return True, "Location needs manual review"
 
 
 def _internship_passes(title: Optional[str]) -> tuple[bool, str]:
@@ -152,9 +146,9 @@ def _seniority_passes(title: Optional[str]) -> tuple[bool, str]:
 
 
 def _role_family_passes(title: Optional[str], description: Optional[str]) -> tuple[bool, str]:
-    haystack = _normalize_text(f"{title or ''} {description or ''}")
+    normalized_title = _normalize_text(title)
     for term in REJECTED_ROLE_TERMS:
-        if term in haystack:
+        if term in normalized_title:
             return False, f"Off-profile role family: {term}"
     return True, "Role family acceptable"
 
