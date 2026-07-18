@@ -8,6 +8,7 @@ export type JobFiltersState = {
   recommendation: string
   source: string
   minFitScore: string
+  sortBy: 'LATEST' | 'FIT'
 }
 
 type JobFiltersProps = {
@@ -18,7 +19,7 @@ type JobFiltersProps = {
 
 export function JobFilters({ filters, sources, onChange }: JobFiltersProps) {
   return (
-    <div className="grid gap-3 rounded-[28px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)]/85 p-4 shadow-sm sm:grid-cols-2 xl:grid-cols-5">
+    <div className="grid gap-3 rounded-[28px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)]/85 p-4 shadow-sm sm:grid-cols-2 xl:grid-cols-6">
       <div className="relative xl:col-span-2">
         <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <Input
@@ -41,6 +42,11 @@ export function JobFilters({ filters, sources, onChange }: JobFiltersProps) {
         <option value="APPLY">Apply</option>
         <option value="MAYBE">Maybe</option>
         <option value="REVIEW">Review</option>
+      </Select>
+
+      <Select value={filters.sortBy} onChange={(event) => onChange({ ...filters, sortBy: event.target.value as JobFiltersState['sortBy'] })}>
+        <option value="LATEST">Sort: Latest</option>
+        <option value="FIT">Sort: Candidate score</option>
       </Select>
 
       <div className="grid grid-cols-2 gap-3">

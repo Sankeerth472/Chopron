@@ -96,10 +96,20 @@ def _default_fit_payload() -> dict:
 
 
 async def _enrich_job_with_candidate_fit(candidate_profile: Optional[dict], job: dict) -> dict:
-    if not candidate_profile or int(job.get("relevance_score") or 0) < 70:
+    if not candidate_profile:
         return {
             **job,
             **_default_fit_payload(),
+        }
+
+    heuristic_fit_result = heuristic_candidate_fit(candidate_profile or {}, job)
+    heuristic_readiness_result = heuristic_application_readiness(candidate_profile or {}, job, heuristic_fit_result)
+
+    if int(job.get("relevance_score") or 0) < 70:
+        return {
+            **job,
+            **heuristic_fit_result,
+            **heuristic_readiness_result,
         }
 
     try:
@@ -107,12 +117,7 @@ async def _enrich_job_with_candidate_fit(candidate_profile: Optional[dict], job:
         if fit_result.get("apply_recommendation") in {"APPLY", "MAYBE"}:
             readiness_result = await evaluate_application_readiness(candidate_profile, job, fit_result)
         else:
-            readiness_result = {
-                "resume_keywords_to_add": [],
-                "resume_angle": "",
-                "cover_letter_angle": "",
-                "interview_prep_topics": [],
-            }
+            readiness_result = heuristic_application_readiness(candidate_profile, job, fit_result)
 
         return {
             **job,
@@ -128,12 +133,10 @@ async def _enrich_job_with_candidate_fit(candidate_profile: Optional[dict], job:
             job.get("company"),
             exc,
         )
-        fit_result = heuristic_candidate_fit(candidate_profile or {}, job)
-        readiness_result = heuristic_application_readiness(candidate_profile or {}, job, fit_result)
         return {
             **job,
-            **fit_result,
-            **readiness_result,
+            **heuristic_fit_result,
+            **heuristic_readiness_result,
         }
 
 
@@ -148,9 +151,21 @@ async def _enrich_jobs_with_candidate_fit(candidate_profile: Optional[dict], job
         if candidate_profile and int(job.get("relevance_score") or 0) >= 70 and len(llm_eligible_jobs) < MAX_LLM_EVAL_JOBS:
             llm_eligible_jobs.append({**job, "_original_index": index})
         else:
+            heuristic_fit_result = heuristic_candidate_fit(candidate_profile or {}, job) if candidate_profile else _default_fit_payload()
+            heuristic_readiness_result = (
+                heuristic_application_readiness(candidate_profile or {}, job, heuristic_fit_result)
+                if candidate_profile
+                else {
+                    "resume_keywords_to_add": [],
+                    "resume_angle": "",
+                    "cover_letter_angle": "",
+                    "interview_prep_topics": [],
+                }
+            )
             passthrough_jobs.append({
                 **job,
-                **_default_fit_payload(),
+                **heuristic_fit_result,
+                **heuristic_readiness_result,
                 "_original_index": index,
             })
 

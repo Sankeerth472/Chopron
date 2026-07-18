@@ -89,6 +89,12 @@ export function JobCard({ job, onOpen, onToggleApplied, isUpdating = false }: Jo
           <CheckSquare className="h-4 w-4 text-teal-600" />
           Mark as applied
         </label>
+        <Button asChild className="w-full justify-between">
+          <a href={job.url || '#'} target="_blank" rel="noreferrer">
+            Apply
+            <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          </a>
+        </Button>
         <Button variant="secondary" className="w-full justify-between" onClick={() => onOpen(job.id)}>
           Open analysis
           <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />

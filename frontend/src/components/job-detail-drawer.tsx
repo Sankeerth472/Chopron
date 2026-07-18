@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import {
-  ArrowUpRight,
   BriefcaseBusiness,
   CircleX,
   FileBadge2,
@@ -119,12 +118,6 @@ export function JobDetailDrawer({ jobId, onClose }: JobDetailDrawerProps) {
               </Section>
 
               <div className="flex flex-wrap gap-3">
-                <Button asChild>
-                  <a href={data.url || '#'} target="_blank" rel="noreferrer">
-                    Open job posting
-                    <ArrowUpRight className="h-4 w-4" />
-                  </a>
-                </Button>
                 <Button variant="secondary" onClick={onClose}>
                   Close
                 </Button>

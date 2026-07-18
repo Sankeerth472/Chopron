@@ -63,10 +63,10 @@ def _build_user_jobs_query(db: Session, user_id: int, statuses: Optional[list[st
 
     return query.order_by(
         applied_status_order.asc(),
+        UserJob.updated_at.desc(),
         Job.publication_date.desc().nullslast(),
         UserJob.relevance_score.desc().nullslast(),
         UserJob.candidate_fit_score.desc().nullslast(),
-        UserJob.updated_at.desc(),
         priority_order.desc(),
     )
 

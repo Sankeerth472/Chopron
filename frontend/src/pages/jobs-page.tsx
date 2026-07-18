@@ -11,6 +11,7 @@ import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 import { toast } from 'sonner'
+import type { FetchJobsResponse } from '../types/api'
 
 const EMPTY_JOBS: Array<(Awaited<ReturnType<typeof getMyJobs>>)['jobs'][number]> = []
 
@@ -20,10 +21,29 @@ const defaultFilters: JobFiltersState = {
   recommendation: 'ALL',
   source: 'ALL',
   minFitScore: '',
+  sortBy: 'LATEST',
 }
 
 const PAGE_SIZE = 12
 const APPLY_EXIT_DELAY_MS = 280
+const LAST_FETCH_STATS_STORAGE_KEY = 'chopron:last-fetch-stats'
+
+function loadLastFetchStats(): FetchJobsResponse | null {
+  if (typeof window === 'undefined') return null
+
+  try {
+    const raw = window.localStorage.getItem(LAST_FETCH_STATS_STORAGE_KEY)
+    if (!raw) return null
+    return JSON.parse(raw) as FetchJobsResponse
+  } catch {
+    return null
+  }
+}
+
+function saveLastFetchStats(value: FetchJobsResponse) {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(LAST_FETCH_STATS_STORAGE_KEY, JSON.stringify(value))
+}
 
 export function JobsPage() {
   const queryClient = useQueryClient()
@@ -32,6 +52,7 @@ export function JobsPage() {
   const [page, setPage] = useState(0)
   const [leavingJobIds, setLeavingJobIds] = useState<number[]>([])
   const [hiddenJobIds, setHiddenJobIds] = useState<number[]>([])
+  const [lastFetchStats, setLastFetchStats] = useState<FetchJobsResponse | null>(() => loadLastFetchStats())
   const jobElementRefs = useRef(new Map<number, HTMLDivElement>())
   const previousPositionsRef = useRef(new Map<number, DOMRect>())
   const leaveTimersRef = useRef(new Map<number, number>())
@@ -69,6 +90,12 @@ export function JobsPage() {
   const fetchJobsMutation = useMutation({
     mutationFn: (profileId?: number) => fetchJobs({ profileId, limit: 25, flowId: getOrCreateActiveFlowId() }),
     onSuccess: (result) => {
+      setPage(0)
+      setSelectedJobId(null)
+      setHiddenJobIds([])
+      setLeavingJobIds([])
+      setLastFetchStats(result)
+      saveLastFetchStats(result)
       queryClient.invalidateQueries({ queryKey: ['jobs'] })
       queryClient.invalidateQueries({ queryKey: ['jobs-summary'] })
       toast.success(`Matching jobs refreshed. ${result.jobs.length} jobs returned.`)
@@ -88,7 +115,7 @@ export function JobsPage() {
     const searchTerm = filters.query.trim().toLowerCase()
     const minFit = filters.minFitScore ? Number(filters.minFitScore) : null
 
-    return [...jobs]
+    const filtered = [...jobs]
       .filter((job) => {
         if (filters.applyPriority !== 'ALL' && job.apply_priority !== filters.applyPriority) return false
         if (filters.recommendation !== 'ALL' && job.apply_recommendation !== filters.recommendation) return false
@@ -100,6 +127,28 @@ export function JobsPage() {
           .filter(Boolean)
           .some((value) => value.toLowerCase().includes(searchTerm))
       })
+
+    filtered.sort((left, right) => {
+      if (filters.sortBy === 'FIT') {
+        const fitDelta = (right.candidate_fit_score ?? -1) - (left.candidate_fit_score ?? -1)
+        if (fitDelta !== 0) return fitDelta
+
+        const relevanceDelta = (right.relevance_score ?? -1) - (left.relevance_score ?? -1)
+        if (relevanceDelta !== 0) return relevanceDelta
+      }
+
+      const leftDate = left.publication_date ? new Date(left.publication_date).getTime() : 0
+      const rightDate = right.publication_date ? new Date(right.publication_date).getTime() : 0
+      const recencyDelta = rightDate - leftDate
+      if (recencyDelta !== 0) return recencyDelta
+
+      const relevanceDelta = (right.relevance_score ?? -1) - (left.relevance_score ?? -1)
+      if (relevanceDelta !== 0) return relevanceDelta
+
+      return (right.candidate_fit_score ?? -1) - (left.candidate_fit_score ?? -1)
+    })
+
+    return filtered
   }, [filters, jobs])
 
   const visibleJobs = useMemo(
@@ -215,10 +264,10 @@ export function JobsPage() {
           </div>
         </div>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <Stat label="Fetched" value={String(fetchJobsMutation.data?.fetched_count ?? jobs.length)} />
-          <Stat label="Deduplicated" value={String(fetchJobsMutation.data?.deduplicated_count ?? jobs.length)} />
-          <Stat label="Passed" value={String(fetchJobsMutation.data?.passed_count ?? jobs.filter((job) => job.apply_recommendation !== 'REVIEW').length)} />
-          <Stat label="Updated" value={String(fetchJobsMutation.data?.updated_count ?? 0)} />
+          <Stat label="Fetched" value={String(fetchJobsMutation.data?.fetched_count ?? lastFetchStats?.fetched_count ?? totalJobs)} />
+          <Stat label="Deduplicated" value={String(fetchJobsMutation.data?.deduplicated_count ?? lastFetchStats?.deduplicated_count ?? totalJobs)} />
+          <Stat label="Passed" value={String(fetchJobsMutation.data?.passed_count ?? lastFetchStats?.passed_count ?? jobs.filter((job) => job.apply_recommendation !== 'REVIEW').length)} />
+          <Stat label="Updated" value={String(fetchJobsMutation.data?.updated_count ?? lastFetchStats?.updated_count ?? 0)} />
         </div>
         <JobFilters filters={filters} sources={sources} onChange={handleFiltersChange} />
       </section>
